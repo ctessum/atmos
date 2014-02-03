@@ -28,7 +28,6 @@ func TemperatureAdjustRate(k298, EperR, T float64) (k float64) {
 // (H [M atm-1]), temperature (T [K]), cloud/fog liquid
 // water mixing ratio (wL [vol water/vol air]).
 func GasLiquidDistributionFactor(H, T, wL float64) float64 {
-
 	return H * R * T * wL
 }
 

@@ -66,7 +66,7 @@ func ParticleDryDep(obk, ustar, T, pblz, z0, r, ρp, P float64) (
 	// Total resistance = Ra + Rs.
 	// Set a minimum value for DVEL
 	// MIN(vd_aerosol) = 1.0e-4 m/s
-	vd = min(1./(ra+rs+ra*rs*vs)+vs, 1.0E-4)
+	vd = max(1./(ra+rs+ra*rs*vs)+vs, 1.0E-4)
 	return
 }
 
@@ -89,7 +89,7 @@ func GasDryDep(obk, ustar, pblz, z0, Dratio float64) (vd float64) {
 	// Set a minimum value for DVEL
 	// MIN(VdSO2)      = 2.0e-3 m/s  over ice
 	//                 = 3.0e-3 m/s  over land
-	vd = min(1./(ra+rb+rs), 3.0E-3)
+	vd = max(1./(ra+rb+rs), 3.0E-3)
 	return
 }
 
