@@ -52,7 +52,7 @@ func M2d(M2u, z, Δz, h float64) float64 {
 }
 
 // Calculate local mixing coefficient [m2/s] based on Pleim (2007)
-// equation 11b when given height at the middle of
+// equation 11b when given height at the bottom of
 // the current model layer (z [m]), boundary layer height (h [m]),
 // Monin-Obukhov length (L [m]), and friction velocity (ustar [m/s]),
 // and convective mixing fraction (fconv [-]).
