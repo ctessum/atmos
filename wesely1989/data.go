@@ -66,9 +66,14 @@ type GasData struct {
 
 // Properties of various gases from Wesely (1989) Table 2.
 var (
-	So2Data  = &GasData{1.9, 1.e5, 0}
-	O3Data   = &GasData{1.6, 0.01, 1}
-	No2Data  = &GasData{1.6, 0.01, 0.1}
+	So2Data = &GasData{1.9, 1.e5, 0}
+	O3Data  = &GasData{1.6, 0.01, 1}
+	No2Data = &GasData{1.6, 0.01, 0.1} // Wesely (1989) suggests that,
+	// in general, the sum of NO and NO2 should be considered rather
+	// than NO2 alone because rapid in-air chemical reactions can cause
+	// a significant change of NO and NO2 vertical fluxes between the
+	// surface and the point at which deposition velocities are applied,
+	// but the sum of NO and NO2 fluxes should be practically unchanged.
 	NoData   = &GasData{1.3, 2.e-3, 0}
 	Hno3Data = &GasData{1.9, 1.e14, 0}
 	H2o2Data = &GasData{1.4, 1.e5, 1}

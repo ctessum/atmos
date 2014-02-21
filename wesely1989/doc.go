@@ -1,5 +1,4 @@
-
-/* 
+/*
 Package wesely1989 implements an algorithm for surface resistance to dry deposition.
 
 Citation for the original article:

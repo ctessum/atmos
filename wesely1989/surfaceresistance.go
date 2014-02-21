@@ -1,6 +1,9 @@
 package wesely1989
 
-import "math"
+import (
+"math"
+"fmt"
+)
 
 /*
 Calculates surface resistance to dry depostion [s m-1] based on Wesely (1989)
@@ -38,7 +41,7 @@ From Wesely (1989) regarding rain and dew inputs:
 	index. After dewfall and rainfall events are completed, surface wetness
 	often disappears as a result of evaporation after approximately 2
 	hours of good atmospheric mixing, the period of time recommended earlier
-	(Sheih et al., 1986)"
+	(Sheih et al., 1986)".
 */
 func SurfaceResistance(gasData *GasData, G, Ts, Θ float64,
 	iSeason, iLandUse int, rain, dew, isSO2, isO3 bool) (r_c float64) {
@@ -69,9 +72,21 @@ func SurfaceResistance(gasData *GasData, G, Ts, Θ float64,
 		rclx += correction
 		rgsx += correction
 	}
+	fmt.Println(rsmx,rlux,rdc,rclx,rac,rgsx)
 
 	r_c = 1 / (1/(rsmx) + 1/rlux + 1/(rdc+rclx) + 1/(rac+rgsx))
+	r_c = max(r_c, 10.) // From "Results and conclusions" section
+	// to avoid extremely high deposition velocities over
+	// extremely rough surfaces.
 	return
+}
+
+func max(a,b float64) float64 {
+	if a>b {
+	return a 
+	}else {
+	return b
+	}
 }
 
 // Calculate bulk canopy stomatal resistance [s m-1] based on Wesely (1989)
@@ -129,7 +144,7 @@ func r_lux(Hstar, fo float64, iSeason, iLandUse int,
 	if dew {
 		if isSO2 {
 			if iLandUse == 0 {
-				rlux = 50 // equation 13 and a half
+				rlux = 50. // equation 13 and a half
 			} else {
 				rlux = 100. // equation 10.
 			}
@@ -158,7 +173,7 @@ func r_lux(Hstar, fo float64, iSeason, iLandUse int,
 				fo/rluO) // equation 14
 		}
 	} else {
-		rlux = r_lu[iSeason][iLandUse] * 1. / (1.e-5*Hstar + fo)
+		rlux = r_lu[iSeason][iLandUse] / (1.e-5*Hstar + fo)
 	}
 	return
 }
