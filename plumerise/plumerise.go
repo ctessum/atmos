@@ -25,11 +25,11 @@ func PlumeRiseASME(stackHeight, stackDiam, stackTemp,
 	// Find K level of stack
 	kStak := 0
 	for layerHeights[kStak+1] < stackHeight {
-		if kStak > len(layerHeights)-1 {
+		kStak++
+		if kStak >= len(layerHeights)-2 {
 			err = fmt.Errorf("stack height > top of grid")
 			return
 		}
-		kStak++
 	}
 	deltaH := 0. // Plume rise, (m).
 	var calcType string
