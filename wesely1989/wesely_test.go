@@ -137,6 +137,6 @@ func TestWesely(t *testing.T) {
 }
 
 func different(a, b float64) bool {
-	c:=math.Abs(a-b)
+	c := math.Abs(a - b)
 	return c/b > .1 && c >= 11.
 }

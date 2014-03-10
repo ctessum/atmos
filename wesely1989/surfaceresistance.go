@@ -80,7 +80,7 @@ func SurfaceResistance(gasData *GasData, G, Ts, Θ float64,
 	r_c = max(r_c, 10.) // From "Results and conclusions" section
 	// to avoid extremely high deposition velocities over
 	// extremely rough surfaces.
-	r_c = min(r_c,9999.)
+	r_c = min(r_c, 9999.)
 	return
 }
 
@@ -167,8 +167,8 @@ func r_lux(Hstar, fo float64, iSeason, iLandUse int,
 			rlux = 1. / (1./(3*r_lu[iSeason][iLandUse]) + 1.e-7*Hstar +
 				fo/rluO) // equation 14
 		}
-	} else if rain && iSeason!=3 {
-		if isSO2  {
+	} else if rain && iSeason != 3 {
+		if isSO2 {
 			if iLandUse == 0 {
 				rlux = 50 // equation 13 and a half
 			} else {
