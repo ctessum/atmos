@@ -1,9 +1,9 @@
 package wesely1989
 
 import (
-	"testing"
-	"math"
 	"fmt"
+	"math"
+	"testing"
 )
 
 // Results from Wesely (1989) table 3
@@ -64,7 +64,7 @@ var (
 		{3300, 3300, 3400, 3700, 6800, 6800, 6800},
 		{320, 350, 420, 950, 2400, 2000, 1800}}
 
-	FORM = [][]float64{
+	ORA = [][]float64{
 		{30, 30, 30, 40, 40, 0, 0},
 		{130, 140, 150, 160, 190, 0, 0},
 		{130, 130, 140, 160, 180, 0, 0},
@@ -83,7 +83,7 @@ var (
 		{1700, 1700, 1700, 1800, 2400, 2200, 1900},
 		{3800, 3900, 4000, 4400, 9700, 9700, 9700},
 		{400, 430, 510, 1000, 2400, 2300, 2000}}
-	HNO3 = [][]float64{
+	HNO2 = [][]float64{
 		{100, 110, 140, 340, 1000, 90, 90},
 		{1300, 1300, 1300, 1300, 1300, 1400, 90, 90},
 		{1100, 1100, 1100, 1100, 1100, 90, 90},
@@ -97,11 +97,10 @@ func TestWesely(t *testing.T) {
 	Garr := []float64{800, 500, 300, 100, 0} // Solar radiation [W m-2]
 	Θ := 0.                                  // Slope [radians]
 
-	polNames := []string{"SO2", "O3", "NO2", "H2O2", "ALD", "HCHO", "OP", "PAA", "FORM", "NH3", "PAN", "HNO3"}
-	testData := [][][]float64{SO2, O3, NO2, H2O2, ALD, HCHO, OP, PAA, FORM, NH3, PAN, HNO3}
-	gasData := []*GasData{So2Data, O3Data, No2Data, H2o2Data, AldData, HchoData, OpData, PaaData, HchoData, Nh3Data, PanData, Hno3Data}
+	polNames := []string{"SO2", "O3", "NO2", "H2O2", "ALD", "HCHO", "OP", "PAA", "ORA", "NH3", "PAN", "HNO2"}
+	testData := [][][]float64{SO2, O3, NO2, H2O2, ALD, HCHO, OP, PAA, ORA, NH3, PAN, HNO2}
+	gasData := []*GasData{So2Data, O3Data, No2Data, H2o2Data, AldData, HchoData, OpData, PaaData, OraData, Nh3Data, PanData, Hno2Data}
 
-	rain, dew := false, false
 	for iPol, pol := range polNames {
 		polData := testData[iPol]
 		isSO2, isO3 := false, false
@@ -114,25 +113,30 @@ func TestWesely(t *testing.T) {
 		for iSeason := 0; iSeason < 5; iSeason++ {
 			for ig, G := range Garr {
 				r_c := SurfaceResistance(gasData[iPol], G, Ts[iSeason], Θ,
-					iSeason, iLandUse, rain, dew, isSO2, isO3)
-				if math.Abs(r_c - polData[iSeason][ig]) > 50 {
-				fmt.Printf("%v, %v, %v: %.0f, %g\n",pol, iSeason, G,r_c,polData[iSeason][ig])
-				t.Fail()
-			}
+					iSeason, iLandUse, false, false, isSO2, isO3)
+				if different(r_c, polData[iSeason][ig]) {
+					fmt.Printf("%v, %v, %v: %.0f, %g\n", pol, iSeason, G, r_c, polData[iSeason][ig])
+					t.Fail()
+				}
 			}
 			r_c := SurfaceResistance(gasData[iPol], 0., Ts[iSeason], Θ,
-				iSeason, iLandUse, rain, true, isSO2, isO3) // dew
-			if math.Abs(r_c - polData[iSeason][5]) > 50 {
-				fmt.Printf("%v, %v, %v: %.0f, %g\n",pol,iSeason,"dew", r_c,polData[iSeason][5])
+				iSeason, iLandUse, false, true, isSO2, isO3) // dew
+			if different(r_c, polData[iSeason][5]) {
+				fmt.Printf("%v, %v, %v: %.0f, %g\n", pol, iSeason, "dew", r_c, polData[iSeason][5])
 				t.Fail()
 			}
-			
+
 			r_c = SurfaceResistance(gasData[iPol], 0., Ts[iSeason], Θ,
-				iSeason, iLandUse, true, dew, isSO2, isO3) // rain
-			if math.Abs(r_c - polData[iSeason][6]) > 50 {
-				fmt.Printf("%v, %v, %v: %.0f, %g\n",pol,iSeason,"rain", r_c,polData[iSeason][6])
+				iSeason, iLandUse, true, false, isSO2, isO3) // rain
+			if different(r_c, polData[iSeason][6]) {
+				fmt.Printf("%v, %v, %v: %.0f, %g\n", pol, iSeason, "rain", r_c, polData[iSeason][6])
 				t.Fail()
 			}
 		}
 	}
+}
+
+func different(a, b float64) bool {
+	c:=math.Abs(a-b)
+	return c/b > .1 && c >= 11.
 }
