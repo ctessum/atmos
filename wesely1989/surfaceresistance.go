@@ -105,7 +105,7 @@ func min(a, b float64) float64 {
 // the land use index (iLandUse), and whether there is currently rain or dew.
 func r_s(G, Ts float64, iSeason, iLandUse int, rainOrDew bool) (rs float64) {
 	if Ts >= 39.9 || Ts <= 0.1 {
-		rs = 1.e10
+		rs = inf
 	} else {
 		rs = r_i[iSeason][iLandUse] * (1 + math.Pow(200.*1./(G+0.1), 2.)) *
 			(400. * 1. / (Ts * (40. - Ts)))
@@ -164,8 +164,8 @@ func r_lux(Hstar, fo float64, iSeason, iLandUse int,
 			rlux = 1. / (1./3000. + 1./(3*r_lu[iSeason][iLandUse]))
 		} else {
 			rluO := 1. / (1./3000. + 1./(3*r_lu[iSeason][iLandUse])) // equation 11
-			rlux = 1. / (1./(3*r_lu[iSeason][iLandUse]) + 1.e-7*Hstar +
-				fo/rluO) // equation 14
+			rlux = 1. / (1./(3*r_lu[iSeason][iLandUse] / (1.e-5*Hstar + fo)) + 1.e-7*Hstar +
+				fo/rluO) // equation 14, modified to match Walmsley eq. 5g
 		}
 	} else if rain && iSeason != 3 {
 		if isSO2 {
@@ -180,8 +180,8 @@ func r_lux(Hstar, fo float64, iSeason, iLandUse int,
 			rlux = 1. / (1./1000. + 1./(3*r_lu[iSeason][iLandUse]))
 		} else {
 			rluO := 1. / (1./1000. + 1./(3*r_lu[iSeason][iLandUse])) // equation 13
-			rlux = 1. / (1./(3*r_lu[iSeason][iLandUse]) + 1.e-7*Hstar +
-				fo/rluO) // equation 14
+			rlux = 1. / (1./(3*r_lu[iSeason][iLandUse] / (1.e-5*Hstar + fo)) + 1.e-7*Hstar +
+				fo/rluO) // equation 14, modified to match Walmsley eq. 5g
 		}
 	} else {
 		rlux = r_lu[iSeason][iLandUse] / (1.e-5*Hstar + fo)

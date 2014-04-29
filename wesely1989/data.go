@@ -1,21 +1,23 @@
 package wesely1989
 
+const inf=1.e25
+
 // r_i represents the minimum bulk canopy stomatal resistances for water vapor.
 var r_i = [][]float64{
-	{9999, 60, 120, 70, 130, 100, 9999, 9999, 80, 100, 150},
-	{9999, 9999, 9999, 9999, 250, 500, 9999, 9999, 9999, 9999, 9999},
-	{9999, 9999, 9999, 9999, 250, 500, 9999, 9999, 9999, 9999, 9999},
-	{9999, 9999, 9999, 9999, 400, 800, 9999, 9999, 9999, 9999, 9999},
-	{9999, 120, 240, 140, 250, 190, 9999, 9999, 160, 200, 300}}
+	{inf, 60, 120, 70, 130, 100, inf, inf, 80, 100, 150},
+	{inf, inf, inf, inf, 250, 500, inf, inf, inf, inf, inf},
+	{inf, inf, inf, inf, 250, 500, inf, inf, inf, inf, inf},
+	{inf, inf, inf, inf, 400, 800, inf, inf, inf, inf, inf},
+	{inf, 120, 240, 140, 250, 190, inf, inf, 160, 200, 300}}
 
 // r_lu signifies leaf cuticles in healthy vegetation and otherwise
 // the outer surfaces in the upper canopy.
 var r_lu = [][]float64{
-	{9999, 2000, 2000, 2000, 2000, 2000, 9999, 9999, 2500, 2000, 4000},
-	{9999, 9000, 9000, 9000, 4000, 8000, 9999, 9999, 9000, 9000, 9000},
-	{9999, 9999, 9000, 9000, 4000, 8000, 9999, 9999, 9000, 9000, 9000},
-	{9999, 9999, 9999, 9999, 6000, 9000, 9999, 9999, 9000, 9000, 9000},
-	{9999, 4000, 4000, 4000, 2000, 3000, 9999, 9999, 4000, 4000, 8000}}
+	{inf, 2000, 2000, 2000, 2000, 2000, inf, inf, 2500, 2000, 4000},
+	{inf, 9000, 9000, 9000, 4000, 8000, inf, inf, 9000, 9000, 9000},
+	{inf, inf, 9000, 9000, 4000, 8000, inf, inf, 9000, 9000, 9000},
+	{inf, inf, inf, inf, 6000, 9000, inf, inf, 9000, 9000, 9000},
+	{inf, 4000, 4000, 4000, 2000, 3000, inf, inf, 4000, 4000, 8000}}
 
 // r_ac signifies transfer that depends only on canopy height and density.
 var r_ac = [][]float64{
@@ -44,18 +46,18 @@ var r_gsO = [][]float64{
 // r_cl is meant to account for uptake pathways at the leaves, bark, etc.
 // 'S' and 'O' stand for SO2 and O3 respectively.
 var r_clS = [][]float64{
-	{9999, 2000, 2000, 2000, 2000, 2000, 9999, 9999, 2500, 2000, 4000},
-	{9999, 9000, 9000, 9000, 2000, 4000, 9999, 9999, 9000, 9000, 9000},
-	{9999, 9999, 9000, 9000, 3000, 6000, 9999, 9999, 9000, 9000, 9000},
-	{9999, 9999, 9999, 9000, 200, 400, 9999, 9999, 9000, 9999, 9000},
-	{9999, 4000, 4000, 4000, 2000, 3000, 9999, 9999, 4000, 4000, 8000}}
+	{inf, 2000, 2000, 2000, 2000, 2000, inf, inf, 2500, 2000, 4000},
+	{inf, 9000, 9000, 9000, 2000, 4000, inf, inf, 9000, 9000, 9000},
+	{inf, inf, 9000, 9000, 3000, 6000, inf, inf, 9000, 9000, 9000},
+	{inf, inf, inf, 9000, 200, 400, inf, inf, 9000, inf, 9000},
+	{inf, 4000, 4000, 4000, 2000, 3000, inf, inf, 4000, 4000, 8000}}
 
 var r_clO = [][]float64{
-	{9999, 1000, 1000, 1000, 1000, 1000, 9999, 9999, 1000, 1000, 1000},
-	{9999, 400, 400, 400, 1000, 600, 9999, 9999, 400, 400, 400},
-	{9999, 1000, 400, 400, 1000, 600, 9999, 9999, 800, 600, 600},
-	{9999, 1000, 1000, 400, 1500, 600, 9999, 9999, 800, 1000, 800},
-	{9999, 1000, 500, 500, 1500, 700, 9999, 9999, 600, 800, 800}}
+	{inf, 1000, 1000, 1000, 1000, 1000, inf, inf, 1000, 1000, 1000},
+	{inf, 400, 400, 400, 1000, 600, inf, inf, 400, 400, 400},
+	{inf, 1000, 400, 400, 1000, 600, inf, inf, 800, 600, 600},
+	{inf, 1000, 1000, 400, 1500, 600, inf, inf, 800, 1000, 800},
+	{inf, 1000, 500, 500, 1500, 700, inf, inf, 600, 800, 800}}
 
 // Holder for gas properties from Wesely (1989) Table 2.
 type GasData struct {
@@ -74,7 +76,7 @@ var (
 	// a significant change of NO and NO2 vertical fluxes between the
 	// surface and the point at which deposition velocities are applied,
 	// but the sum of NO and NO2 fluxes should be practically unchanged.
-	NoData   = &GasData{1.3, 2.e-3, 0}
+	NoData   = &GasData{1.3, 3.e-3, 0} // Changed according to Walmsley (1996)
 	Hno3Data = &GasData{1.9, 1.e14, 0}
 	H2o2Data = &GasData{1.4, 1.e5, 1}
 	AldData  = &GasData{1.6, 15, 0}    // Acetaldehyde (aldehyde class)
@@ -82,7 +84,7 @@ var (
 	OpData   = &GasData{1.6, 240, 0.1} // Methyl hydroperoxide (organic peroxide class)
 	PaaData  = &GasData{2.0, 540, 0.1} // Peroxyacetyl nitrate
 	OraData  = &GasData{1.6, 4.e6, 0}  // Formic acid (organic acid class)
-	Nh3Data  = &GasData{1.0, 2.e4, 0}
+	Nh3Data  = &GasData{0.97, 2.e4, 0}  // Changed according to Walmsley (1996)
 	PanData  = &GasData{2.6, 3.6, 0.1}  // Peroxyacetyl nitrate
 	Hno2Data = &GasData{1.6, 1.e5, 0.1} // Nitrous acid
 )
