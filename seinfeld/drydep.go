@@ -178,7 +178,7 @@ const (
 	Transitional                         //	4. transitional
 )
 
-// Calculates dry deposition velocity [m/s] for a gas species,
+// Function DryDepGas calculates dry deposition velocity [m/s] for a gas species,
 // where z is the height of the surface layer [m], zo is roughness
 // length [m], ustar is friction velocity [m/s], L is Monin-Obukhov
 // length [m], T is surface air temperature [K], rhoA is air density [kg/m3]
