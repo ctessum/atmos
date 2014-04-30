@@ -1,6 +1,6 @@
 package wesely1989
 
-const inf=1.e25
+const inf = 1.e25
 
 // r_i represents the minimum bulk canopy stomatal resistances for water vapor.
 var r_i = [][]float64{
@@ -79,11 +79,11 @@ var (
 	NoData   = &GasData{1.3, 3.e-3, 0} // Changed according to Walmsley (1996)
 	Hno3Data = &GasData{1.9, 1.e14, 0}
 	H2o2Data = &GasData{1.4, 1.e5, 1}
-	AldData  = &GasData{1.6, 15, 0}    // Acetaldehyde (aldehyde class)
-	HchoData = &GasData{1.3, 6.e3, 0}  // Formaldehyde
-	OpData   = &GasData{1.6, 240, 0.1} // Methyl hydroperoxide (organic peroxide class)
-	PaaData  = &GasData{2.0, 540, 0.1} // Peroxyacetyl nitrate
-	OraData  = &GasData{1.6, 4.e6, 0}  // Formic acid (organic acid class)
+	AldData  = &GasData{1.6, 15, 0}     // Acetaldehyde (aldehyde class)
+	HchoData = &GasData{1.3, 6.e3, 0}   // Formaldehyde
+	OpData   = &GasData{1.6, 240, 0.1}  // Methyl hydroperoxide (organic peroxide class)
+	PaaData  = &GasData{2.0, 540, 0.1}  // Peroxyacetyl nitrate
+	OraData  = &GasData{1.6, 4.e6, 0}   // Formic acid (organic acid class)
 	Nh3Data  = &GasData{0.97, 2.e4, 0}  // Changed according to Walmsley (1996)
 	PanData  = &GasData{2.6, 3.6, 0.1}  // Peroxyacetyl nitrate
 	Hno2Data = &GasData{1.6, 1.e5, 0.1} // Nitrous acid

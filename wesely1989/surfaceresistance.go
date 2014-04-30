@@ -5,6 +5,32 @@ import (
 	"math"
 )
 
+type SeasonCategory int
+
+const (
+	Midsummer    SeasonCategory = iota // 0: Midsummer with lush vegetation
+	Autumn                             // 1: Autumn with unharvested cropland
+	LateAutumn                         // 2: Late autumn after frost, no snow
+	Winter                             // 3: Winter, snow on ground and subfreezing
+	Transitional                       // 4: Transitional spring with partially green short annuals
+)
+
+type LandUseCategory int
+
+const (
+	Urban        LandUseCategory = iota // 0: Urban land
+	Agricultural                        // 1: Agricultural land
+	Range                               // 2: Range land
+	Deciduous                           // 3: Deciduous forest
+	Coniferous                          // 4: Coniferous forest
+	MixedForest                         // 5: Mixed forest including wetland
+	Water                               // 6: Water, both salt and fresh
+	Barren                              // 7: Barren land, mostly desert
+	Wetland                             // 8: Nonforested wetland
+	RangeAg                             // 9: Mixed agricultural and range land
+	RockyShrubs                         // 10: Rocky open areas with low-growing shrubs
+)
+
 /*
 Calculates surface resistance to dry depostion [s m-1] based on Wesely (1989)
 equation 2 when given information on the chemical of interest (gasData),
@@ -13,26 +39,6 @@ the slope of the local terrain (Θ [radians]),
 the season index (iSeason), the land use index (iLandUse), whether there is
 currently rain or dew, and whether the chemical of interest is either SO2
 (isSO2) or O3 (isO3).
-
-Options for iSeason are:
-	0: Midsummer with lush vegetation
-	1: Autumn with unharvested cropland
-	2: Late autumn after frost, no snow
-	3: Winter, snow on ground and subfreezing
-	4: Transitional spring with partially green short annuals
-
-Options for iLandUse are:
-	0: Urban land
-	1: Agricultural land
-	2: Range land
-	3: Deciduous forest
-	4: Coniferous forest
-	5: Mixed forest including wetland
-	6: Water, both salt and fresh
-	7: Barren land, mostly desert
-	8: Nonforested wetland
-	9: Mixed agricultural and range land
-	10: Rocky open areas with low-growing shrubs
 
 From Wesely (1989) regarding rain and dew inputs:
 	"A direct computation of the surface wetness would be most desirable, e.g.
@@ -44,26 +50,27 @@ From Wesely (1989) regarding rain and dew inputs:
 	(Sheih et al., 1986)".
 */
 func SurfaceResistance(gasData *GasData, G, Ts, Θ float64,
-	iSeason, iLandUse int, rain, dew, isSO2, isO3 bool) (r_c float64) {
-	rs := r_s(G, Ts, iSeason, iLandUse, rain || dew)
+	iSeason SeasonCategory, iLandUse LandUseCategory,
+	rain, dew, isSO2, isO3 bool) (r_c float64) {
+	rs := r_s(G, Ts, int(iSeason), int(iLandUse), rain || dew)
 	rmx := r_mx(gasData.Hstar, gasData.Fo)
 	rsmx := r_smx(rs, gasData.Dh2oPerDx, rmx)
 	rdc := r_dc(G, Θ)
-	rlux := r_lux(gasData.Hstar, gasData.Fo, iSeason, iLandUse,
+	rlux := r_lux(gasData.Hstar, gasData.Fo, int(iSeason), int(iLandUse),
 		rain, dew, isSO2, isO3)
 	var rclx, rgsx float64
 	switch {
 	case isSO2:
-		rclx = r_clS[iSeason][iLandUse]
-		rgsx = r_gsS[iSeason][iLandUse]
+		rclx = r_clS[int(iSeason)][int(iLandUse)]
+		rgsx = r_gsS[int(iSeason)][int(iLandUse)]
 	case isO3:
-		rclx = r_clO[iSeason][iLandUse]
-		rgsx = r_gsO[iSeason][iLandUse]
+		rclx = r_clO[int(iSeason)][int(iLandUse)]
+		rgsx = r_gsO[int(iSeason)][int(iLandUse)]
 	default:
-		rclx = r_clx(gasData.Hstar, gasData.Fo, iSeason, iLandUse)
-		rgsx = r_gsx(gasData.Hstar, gasData.Fo, iSeason, iLandUse)
+		rclx = r_clx(gasData.Hstar, gasData.Fo, int(iSeason), int(iLandUse))
+		rgsx = r_gsx(gasData.Hstar, gasData.Fo, int(iSeason), int(iLandUse))
 	}
-	rac := r_ac[iSeason][iLandUse]
+	rac := r_ac[int(iSeason)][int(iLandUse)]
 
 	// Correction for cold temperatures from page 4 column 1.
 	if Ts < 0. {
@@ -164,7 +171,7 @@ func r_lux(Hstar, fo float64, iSeason, iLandUse int,
 			rlux = 1. / (1./3000. + 1./(3*r_lu[iSeason][iLandUse]))
 		} else {
 			rluO := 1. / (1./3000. + 1./(3*r_lu[iSeason][iLandUse])) // equation 11
-			rlux = 1. / (1./(3*r_lu[iSeason][iLandUse] / (1.e-5*Hstar + fo)) + 1.e-7*Hstar +
+			rlux = 1. / (1./(3*r_lu[iSeason][iLandUse]/(1.e-5*Hstar+fo)) + 1.e-7*Hstar +
 				fo/rluO) // equation 14, modified to match Walmsley eq. 5g
 		}
 	} else if rain && iSeason != 3 {
@@ -180,7 +187,7 @@ func r_lux(Hstar, fo float64, iSeason, iLandUse int,
 			rlux = 1. / (1./1000. + 1./(3*r_lu[iSeason][iLandUse]))
 		} else {
 			rluO := 1. / (1./1000. + 1./(3*r_lu[iSeason][iLandUse])) // equation 13
-			rlux = 1. / (1./(3*r_lu[iSeason][iLandUse] / (1.e-5*Hstar + fo)) + 1.e-7*Hstar +
+			rlux = 1. / (1./(3*r_lu[iSeason][iLandUse]/(1.e-5*Hstar+fo)) + 1.e-7*Hstar +
 				fo/rluO) // equation 14, modified to match Walmsley eq. 5g
 		}
 	} else {
