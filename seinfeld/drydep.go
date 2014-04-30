@@ -25,9 +25,9 @@ func ra(z, zo, ustar, L float64) float64 {
 	}
 	zeta := z / L
 	zeta0 := zo / L
-	if zeta > 0. { // stable
+	if L > 0. { // stable
 		return 1. / (kappa * ustar) * (math.Log(z/zo) + 4.7*(zeta-zeta0))
-	} else if zeta == 0. { // neutral
+	} else if L == 0. { // neutral
 		return 1. / (kappa * ustar) * math.Log(z/zo)
 	} else { // unstable
 		eta0 := math.Pow(1.-15.*zeta0, 0.25)
@@ -46,21 +46,21 @@ func mu(T float64) float64 {
 }
 
 // Function mfp calculates the mean free path of air [m] where
-// T is temperature [K] and P is pressure [Pa].
-// From http://en.wikipedia.org/wiki/Mean_free_path.
-func mfp(T, P float64) float64 {
-	const sqrt2 = 1.41421356237
-	const d = 216.e-12 // N2 diameter [m]
-	const c = k / (sqrt2 * math.Pi * d * d)
-	return c * T / P
+// T is temperature [K] P is pressure [Pa], and
+// Mu is dynamic viscosity [kg/(m s)].
+// From Seinfeld and Pandis (2006) equation 9.6
+func mfp(T, P, Mu float64) float64 {
+	const M = 28.97e-3  // [kg/mol] molecular weight of air
+	const R = 8.3144621 //  [J K-1 mol-1] Gas constant
+	return 2 * Mu / P / math.Sqrt(8*M/(math.Pi*R*T))
 }
 
 // Function cc calculates the Cunnningham slip correction factor
 // where Dp is particle diameter [m], T is temperature [K], and
 // P is pressure [Pa].
 // From Seinfeld and Pandis (2006) equation 9.34.
-func cc(Dp, T, P float64) float64 {
-	lambda := mfp(T, P)
+func cc(Dp, T, P, Mu float64) float64 {
+	lambda := mfp(T, P, Mu)
 	return 1 + 2*lambda/Dp*
 		(1.257+0.4*math.Exp(-1.1*Dp/(2*lambda)))
 }
@@ -71,6 +71,10 @@ func cc(Dp, T, P float64) float64 {
 // and Mu is air dynamic viscosity [kg/(s m)]. From equation
 // 9.42 in Seinfeld and Pandis (2006).
 func vs(Dp, ρP, Cc, Mu float64) float64 {
+	if Dp > 20.e-6 {
+		panic(fmt.Sprintf("Particle diameter (%g m) is greater "+
+			"than 20um; Stokes settling no longer applies.", Dp))
+	}
 	return Dp * Dp * ρP * g * Cc / (Mu * 18.)
 }
 
@@ -81,6 +85,14 @@ func vs(Dp, ρP, Cc, Mu float64) float64 {
 // Dp is particle diameter [m], and mu is air dynamic viscosity [kg/(s m)].
 func dParticle(T, P, Dp, Cc, mu float64) float64 {
 	return k * T * Cc / (3 * math.Pi * mu * Dp)
+}
+
+// Function dH2O calculates molecular diffusivity of water vapor
+// in air [m2/s] where T is temperature [K]
+//  using a regression fit to data in Bolz and Tuve (1976)
+// found here: http://www.cambridge.org/us/engineering/author/nellisandklein/downloads/examples/EXAMPLE_9.2-1.pdf
+func dH2O(T float64) float64 {
+	return -2.775e-6 + 4.479e-8*T + 1.656e-10*T*T
 }
 
 // Function sc computes the dimensionless Schmidt number,
@@ -145,6 +157,7 @@ func rbParticle(Sc, ustar, St, Dp float64, iSeason SeasonalCategory,
 	c1 := math.Pow(Sc, -gamma[int(iLandUse)])
 	c2 := St / (alpha[int(iLandUse)] + St)
 	c3 := Dp / a[int(iSeason)][int(iLandUse)]
+	fmt.Println(R1, c1, c2, c3)
 	return 1. / (3. * ustar * (c1 + c2*c2 + 0.5*c3*c3) * R1)
 }
 
@@ -153,10 +166,10 @@ func rbParticle(Sc, ustar, St, Dp float64, iSeason SeasonalCategory,
 // and the rows are seasonal categories.
 // (given in Seinfeld and Pandis Table 19.2)
 var a = [][]float64{
-	{2.e-6, 5.e-6, 2.e-6, 0, 10.e-6},
-	{2.e-6, 5.e-6, 2.e-6, 0, 10.e-6},
-	{2.e-6, 10.e-6, 5.e-6, 0, 10.e-6},
-	{2.e-6, 10.e-6, 5.e-6, 0, 10.e-6}}
+	{2.e-6, 5.e-6, 2.e-6, math.Inf(1), 10.e-6},
+	{2.e-6, 5.e-6, 2.e-6, math.Inf(1), 10.e-6},
+	{2.e-6, 10.e-6, 5.e-6, math.Inf(1), 10.e-6},
+	{2.e-6, 10.e-6, 5.e-6, math.Inf(1), 10.e-6}}
 
 type LandUseCategory int
 
@@ -182,21 +195,21 @@ const (
 // where z is the height of the surface layer [m], zo is roughness
 // length [m], ustar is friction velocity [m/s], L is Monin-Obukhov
 // length [m], T is surface air temperature [K], rhoA is air density [kg/m3]
-// Dg is diffusivity of the gas species [m2/s], gd is data about the
-// gas species for surface resistance calculations, G is solar
+// gd is data about the gas species for surface resistance calculations, G is solar
 // irradiation [W m-2], Θ is the slope of the local terrain [radians],
 // iSeason and iLandUse are indexes for the season and land use,
 // dew and rain indicate whether there is dew or rain on the ground,
 // and isSO2 and isO3 indicate whether the gas species of interest
 // is either SO2 or O3, respectively. Based on Seinfeld and Pandis (2006)
 // equation 19.2.
-func DryDepGas(z, zo, ustar, L, T, rhoA, Dg, G, Θ float64,
+func DryDepGas(z, zo, ustar, L, T, rhoA, G, Θ float64,
 	gd *wesely1989.GasData,
 	iSeason wesely1989.SeasonCategory,
 	iLandUse wesely1989.LandUseCategory,
 	rain, dew, isSO2, isO3 bool) float64 {
 	Ra := ra(z, zo, ustar, L)
 	Mu := mu(T)
+	Dg := dH2O(T) / gd.Dh2oPerDx // Diffusivity of gas of interest [m2/s]
 	Sc := sc(Mu, rhoA, Dg)
 	Rb := rbGas(Sc, ustar)
 	Rc := wesely1989.SurfaceResistance(gd, G, T, Θ,
@@ -216,8 +229,8 @@ func DryDepGas(z, zo, ustar, L, T, rhoA, Dg, G, Θ float64,
 func DryDepParticle(z, zo, ustar, L, Dp, T, P, ρParticle, ρAir float64, iSeason SeasonalCategory,
 	iLandUse LandUseCategory) float64 {
 	Ra := ra(z, zo, ustar, L)
-	Cc := cc(Dp, T, P)
 	Mu := mu(T)
+	Cc := cc(Dp, T, P, Mu)
 	Vs := vs(Dp, ρParticle, Cc, Mu)
 	var St float64
 	switch iLandUse {
@@ -229,5 +242,6 @@ func DryDepParticle(z, zo, ustar, L, Dp, T, P, ρParticle, ρAir float64, iSeaso
 	D := dParticle(T, P, Dp, Cc, Mu)
 	Sc := sc(Mu, ρAir, D)
 	Rb := rbParticle(Sc, ustar, St, Dp, iSeason, iLandUse)
+	fmt.Println(1/Ra, 1/Rb, Vs)
 	return 1./(Ra+Rb+Ra*Rb*Vs) + Vs
 }
