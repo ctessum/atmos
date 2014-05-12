@@ -3,6 +3,7 @@ package plumerise
 import (
 	"fmt"
 	"math"
+	"errors"
 )
 
 const (
@@ -27,7 +28,7 @@ func PlumeRiseASME(stackHeight, stackDiam, stackTemp,
 	for layerHeights[kStak+1] < stackHeight {
 		kStak++
 		if kStak >= len(layerHeights)-2 {
-			err = fmt.Errorf("stack height > top of grid")
+			err = AboveModelTop
 			return
 		}
 	}
@@ -86,3 +87,5 @@ func PlumeRiseASME(stackHeight, stackDiam, stackTemp,
 	}
 	return
 }
+
+var AboveModelTop  = errors.New("stack height > top of grid")
