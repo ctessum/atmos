@@ -1,9 +1,10 @@
 package seinfeld
 
 import (
-	"bitbucket.org/ctessum/atmos/wesely1989"
 	"fmt"
 	"math"
+
+	"github.com/ctessum/atmos/wesely1989"
 )
 
 const (

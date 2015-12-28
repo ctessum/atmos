@@ -1,9 +1,10 @@
 package seinfeld
 
 import (
-	"bitbucket.org/ctessum/atmos/wesely1989"
 	"math"
 	"testing"
+
+	"github.com/ctessum/atmos/wesely1989"
 )
 
 // Test calculation of the mean free path
