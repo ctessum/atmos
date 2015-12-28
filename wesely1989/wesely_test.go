@@ -111,7 +111,7 @@ func TestWesely(t *testing.T) {
 		if pol == "O3" {
 			isO3 = true
 		}
-		for iSeason := 0; iSeason < 5; iSeason++ {
+		for iSeason := SeasonCategory(0); iSeason < 5; iSeason++ {
 			for ig, G := range Garr {
 				r_c := SurfaceResistance(gasData[iPol], G, Ts[iSeason], Θ,
 					iSeason, iLandUse, false, false, isSO2, isO3)
