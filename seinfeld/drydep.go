@@ -19,10 +19,6 @@ const (
 // length [m], based on Seinfeld and Pandis (2006)
 // equation 19.13.
 func ra(z, zo, ustar, L float64) float64 {
-	if z > 100. {
-		panic(fmt.Sprintf("z (%v) is greater than 100m, therefore Seinfeld and"+
-			" Pandis eq. 19.13 doesn't apply.", z))
-	}
 	zeta := z / L
 	zeta0 := zo / L
 	if L > 0. { // stable
@@ -157,7 +153,6 @@ func rbParticle(Sc, ustar, St, Dp float64, iSeason SeasonalCategory,
 	c1 := math.Pow(Sc, -gamma[int(iLandUse)])
 	c2 := St / (alpha[int(iLandUse)] + St)
 	c3 := Dp / a[int(iSeason)][int(iLandUse)]
-	fmt.Println(R1, c1, c2, c3)
 	return 1. / (3. * ustar * (c1 + c2*c2 + 0.5*c3*c3) * R1)
 }
 
@@ -242,6 +237,5 @@ func DryDepParticle(z, zo, ustar, L, Dp, T, P, ρParticle, ρAir float64, iSeaso
 	D := dParticle(T, P, Dp, Cc, Mu)
 	Sc := sc(Mu, ρAir, D)
 	Rb := rbParticle(Sc, ustar, St, Dp, iSeason, iLandUse)
-	fmt.Println(1/Ra, 1/Rb, Vs)
 	return 1./(Ra+Rb+Ra*Rb*Vs) + Vs
 }
