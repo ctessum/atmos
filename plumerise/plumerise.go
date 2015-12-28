@@ -1,16 +1,16 @@
 package plumerise
 
 import (
+	"errors"
 	"fmt"
 	"math"
-	"errors"
 )
 
 const (
 	g = 9.80665 // m/s2
 )
 
-// CalcPlumeRise takes emissions stack height(m), diameter (m), temperature (K),
+// ASME takes emissions stack height(m), diameter (m), temperature (K),
 // and exit velocity (m/s) and calculates the k index of the equivalent
 // emissions height after accounting for plume rise.
 // Additional required inputs are model layer heights (staggered grid; layerHeights [m]),
@@ -20,29 +20,78 @@ const (
 // and stability parameter (s1 [unknown units], unstaggered grid).
 // Uses the plume rise calculation: ASME (1973), as described in Sienfeld and Pandis,
 // ``Atmospheric Chemistry and Physics - From Air Pollution to Climate Change
-func PlumeRiseASME(stackHeight, stackDiam, stackTemp,
-	stackVel float64,
-	layerHeights, temperature, windSpeed, sClass, s1 []float64) (kPlume int, err error) {
-	// Find K level of stack
-	kStak := 0
-	for layerHeights[kStak+1] < stackHeight {
-		kStak++
-		if kStak >= len(layerHeights)-2 {
-			err = AboveModelTop
-			return
+func ASME(stackHeight, stackDiam, stackTemp,
+	stackVel float64, layerHeights, temperature, windSpeed,
+	sClass, s1 []float64) (plumeLayer int, plumeHeight float64, err error) {
+
+	stackLayer, err := findstackLayer(layerHeights, stackHeight)
+	if err != nil {
+		return
+	}
+	deltaH, err := calcDeltaH(stackLayer, temperature, windSpeed, sClass, s1,
+		stackHeight, stackTemp, stackVel, stackDiam)
+	if err != nil {
+		return
+	}
+
+	plumeHeight = stackHeight + deltaH
+	plumeLayer, err = findplumeLayer(layerHeights, plumeHeight)
+	return
+}
+
+// ASMEPrecomputed is the same as PlumeRiseASME except it takes
+// precomputed (averaged) meteorological parameters:
+// the inverse of the stability parameter (s1Inverse [1/unknown units],
+// unstaggered grid), windSpeedMinusOnePointFour [(m/s)^(-1.4)] (unstaggered grid),
+// windSpeedMinusThird [(m/s)^(-1/3)] (unstaggered grid),
+// and windSpeedInverse [(m/s)^(-1)] (unstaggered grid),
+// Uses the plume rise calculation: ASME (1973), as described in Sienfeld and Pandis,
+// ``Atmospheric Chemistry and Physics - From Air Pollution to Climate Change
+func ASMEPrecomputed(stackHeight, stackDiam, stackTemp,
+	stackVel float64, layerHeights, temperature, windSpeed,
+	sClass, s1, windSpeedMinusOnePointFour, windSpeedMinusThird,
+	windSpeedInverse []float64) (plumeLayer int, plumeHeight float64, err error) {
+
+	stackLayer, err := findstackLayer(layerHeights, stackHeight)
+	if err != nil {
+		return
+	}
+	deltaH, err := calcDeltaHPrecomputed(stackLayer, temperature, windSpeed, sClass,
+		s1, stackHeight, stackTemp, stackVel, stackDiam,
+		windSpeedMinusOnePointFour, windSpeedMinusThird, windSpeedInverse)
+	if err != nil {
+		return
+	}
+
+	plumeHeight = stackHeight + deltaH
+	plumeLayer, err = findplumeLayer(layerHeights, plumeHeight)
+	return
+}
+
+// Find K level of stack
+func findstackLayer(layerHeights []float64, stackHeight float64) (int, error) {
+	stackLayer := 0
+	for layerHeights[stackLayer+1] < stackHeight {
+		stackLayer++
+		if stackLayer >= len(layerHeights)-2 {
+			return stackLayer, ErrAboveModelTop
 		}
 	}
-	deltaH := 0. // Plume rise, (m).
-	var calcType string
+	return stackLayer, nil
+}
 
-	airTemp := temperature[kStak]
-	windSpd := windSpeed[kStak]
+// calcDeltaH calculates plume rise (ASME, 1973).
+func calcDeltaH(stackLayer int, temperature, windSpeed, sClass, s1 []float64,
+	stackHeight, stackTemp, stackVel, stackDiam float64) (float64, error) {
+	deltaH := 0. // Plume rise, (m).
+
+	airTemp := temperature[stackLayer]
+	windSpd := windSpeed[stackLayer]
 
 	if (stackTemp-airTemp) < 50. &&
 		stackVel > windSpd && stackVel > 10. {
-		// Plume is dominated by momentum forces
-		calcType = "Momentum"
 
+		// Plume is dominated by momentum forces
 		deltaH = stackDiam * math.Pow(stackVel, 1.4) / math.Pow(windSpd, 1.4)
 
 	} else { // Plume is dominated by buoyancy forces
@@ -51,41 +100,94 @@ func PlumeRiseASME(stackHeight, stackDiam, stackTemp,
 		F := g * (stackTemp - airTemp) / stackTemp * stackVel *
 			math.Pow(stackDiam/2, 2)
 
-		if sClass[kStak] > 0.5 { // stable conditions
-			calcType = "Stable"
+		if sClass[stackLayer] > 0.5 { // stable conditions
 
 			deltaH = 29. * math.Pow(
-				F/s1[kStak], 0.333333333) /
+				F/s1[stackLayer], 0.333333333) /
 				math.Pow(windSpd, 0.333333333)
 
 		} else { // unstable conditions
-			calcType = "Unstable"
 
 			deltaH = 7.4 * math.Pow(F*math.Pow(stackHeight, 2.),
 				0.333333333) / windSpd
-
 		}
 	}
 	if math.IsNaN(deltaH) {
-		err = fmt.Errorf("plume height == NaN\n"+
-			"calcType: %v, deltaH: %v, stackDiam: %v,\n"+
+		err := fmt.Errorf("plume height == NaN\n"+
+			"deltaH: %v, stackDiam: %v,\n"+
 			"stackVel: %v, windSpd: %v, stackTemp: %v,\n"+
 			"airTemp: %v, stackHeight: %v\n",
-			calcType, deltaH, stackDiam, stackVel,
+			deltaH, stackDiam, stackVel,
 			windSpd, stackTemp, airTemp, stackHeight)
-		return
+		return deltaH, err
 	}
+	return deltaH, nil
+}
 
-	plumeHeight := stackHeight + deltaH
+// calcDeltaHPrecomputed calculates plume rise, the same as calcDeltaH,
+// (ASME, 1973), except that it uses precomputed meteorological parameters.
+func calcDeltaHPrecomputed(stackLayer int, temperature, windSpeed, sClass,
+	s1 []float64,
+	stackHeight, stackTemp, stackVel, stackDiam float64,
+	windSpeedMinusOnePointFour, windSpeedMinusThird,
+	windSpeedInverse []float64) (float64, error) {
 
-	// Find K level of plume. If the plume rises above the top model
-	// layer, return the top model layer.
-	for kPlume = 0; layerHeights[kPlume+1] < plumeHeight; kPlume++ {
-		if kPlume >= len(layerHeights)-2 {
-			break
+	deltaH := 0. // Plume rise, (m).
+
+	airTemp := temperature[stackLayer]
+	windSpd := windSpeed[stackLayer]
+
+	if (stackTemp-airTemp) < 50. &&
+		stackVel > windSpd && stackVel > 10. {
+
+		// Plume is dominated by momentum forces
+		deltaH = stackDiam * math.Pow(stackVel, 1.4) *
+			windSpeedMinusOnePointFour[stackLayer]
+
+	} else { // Plume is dominated by buoyancy forces
+
+		// Bouyancy flux, m4/s3
+		F := g * (stackTemp - airTemp) / stackTemp * stackVel *
+			math.Pow(stackDiam/2, 2)
+
+		if sClass[stackLayer] > 0.5 { // stable conditions
+
+			// Ideally, we would also use the inverse of S1,
+			// but S1 is zero sometimes so that doesn't work well.
+			deltaH = 29. * math.Pow(
+				F/s1[stackLayer], 0.333333333) * windSpeedMinusThird[stackLayer]
+
+		} else { // unstable conditions
+
+			deltaH = 7.4 * math.Pow(F*math.Pow(stackHeight, 2.),
+				0.333333333) * windSpeedInverse[stackLayer]
+		}
+	}
+	if math.IsNaN(deltaH) {
+		err := fmt.Errorf("plume height == NaN\n"+
+			"deltaH: %v, stackDiam: %v,\n"+
+			"stackVel: %v, windSpd: %v, stackTemp: %v,\n"+
+			"airTemp: %v, stackHeight: %v\n",
+			deltaH, stackDiam, stackVel,
+			windSpd, stackTemp, airTemp, stackHeight)
+		return deltaH, err
+	}
+	return deltaH, nil
+}
+
+// Find K level of plume. If the plume rises above the top model
+// layer, return the top model layer.
+func findplumeLayer(layerHeights []float64, plumeHeight float64) (
+	plumeLayer int, err error) {
+	for plumeLayer = 0; layerHeights[plumeLayer+1] < plumeHeight; plumeLayer++ {
+		if plumeLayer >= len(layerHeights)-2 {
+			err = ErrAboveModelTop
+			return
 		}
 	}
 	return
 }
 
-var AboveModelTop  = errors.New("stack height > top of grid")
+// ErrAboveModelTop is returned when the plume is above the top
+// model layer.
+var ErrAboveModelTop = errors.New("plume rise > top of grid")
