@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 )
 
 const (
@@ -24,7 +25,7 @@ func ASME(stackHeight, stackDiam, stackTemp,
 	stackVel float64, layerHeights, temperature, windSpeed,
 	sClass, s1 []float64) (plumeLayer int, plumeHeight float64, err error) {
 
-	stackLayer, err := findstackLayer(layerHeights, stackHeight)
+	stackLayer, err := findLayer(layerHeights, stackHeight)
 	if err != nil {
 		return
 	}
@@ -35,7 +36,7 @@ func ASME(stackHeight, stackDiam, stackTemp,
 	}
 
 	plumeHeight = stackHeight + deltaH
-	plumeLayer, err = findplumeLayer(layerHeights, plumeHeight)
+	plumeLayer, err = findLayer(layerHeights, plumeHeight)
 	return
 }
 
@@ -52,7 +53,7 @@ func ASMEPrecomputed(stackHeight, stackDiam, stackTemp,
 	sClass, s1, windSpeedMinusOnePointFour, windSpeedMinusThird,
 	windSpeedInverse []float64) (plumeLayer int, plumeHeight float64, err error) {
 
-	stackLayer, err := findstackLayer(layerHeights, stackHeight)
+	stackLayer, err := findLayer(layerHeights, stackHeight)
 	if err != nil {
 		return
 	}
@@ -64,18 +65,19 @@ func ASMEPrecomputed(stackHeight, stackDiam, stackTemp,
 	}
 
 	plumeHeight = stackHeight + deltaH
-	plumeLayer, err = findplumeLayer(layerHeights, plumeHeight)
+	plumeLayer, err = findLayer(layerHeights, plumeHeight)
 	return
 }
 
-// Find K level of stack
-func findstackLayer(layerHeights []float64, stackHeight float64) (int, error) {
-	stackLayer := 0
-	for layerHeights[stackLayer+1] < stackHeight {
-		stackLayer++
-		if stackLayer >= len(layerHeights)-2 {
-			return stackLayer, ErrAboveModelTop
-		}
+// Find K level of stack or plume
+func findLayer(layerHeights []float64, stackHeight float64) (int, error) {
+	stackLayer := sort.SearchFloat64s(layerHeights, stackHeight)
+	if stackLayer == len(layerHeights) {
+		stackLayer -= 2
+		return stackLayer, ErrAboveModelTop
+	}
+	if stackLayer != 0 {
+		stackLayer--
 	}
 	return stackLayer, nil
 }
@@ -173,19 +175,6 @@ func calcDeltaHPrecomputed(stackLayer int, temperature, windSpeed, sClass,
 		return deltaH, err
 	}
 	return deltaH, nil
-}
-
-// Find K level of plume. If the plume rises above the top model
-// layer, return the top model layer.
-func findplumeLayer(layerHeights []float64, plumeHeight float64) (
-	plumeLayer int, err error) {
-	for plumeLayer = 0; layerHeights[plumeLayer+1] < plumeHeight; plumeLayer++ {
-		if plumeLayer >= len(layerHeights)-2 {
-			err = ErrAboveModelTop
-			return
-		}
-	}
-	return
 }
 
 // ErrAboveModelTop is returned when the plume is above the top
