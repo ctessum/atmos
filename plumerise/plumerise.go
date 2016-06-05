@@ -148,8 +148,15 @@ func calcDeltaHPrecomputed(stackLayer int, temperature, windSpeed, sClass,
 
 	} else { // Plume is dominated by buoyancy forces
 
+		var tempDiff float64
+		if stackTemp-airTemp == 0 {
+			tempDiff = 0
+		} else {
+			tempDiff = 2 * (stackTemp - airTemp) / (stackTemp + airTemp)
+		}
+
 		// Bouyancy flux, m4/s3
-		F := g * (stackTemp - airTemp) / stackTemp * stackVel *
+		F := g * tempDiff * stackVel *
 			math.Pow(stackDiam/2, 2)
 
 		if sClass[stackLayer] > 0.5 { // stable conditions
