@@ -40,7 +40,7 @@ func ASME(stackHeight, stackDiam, stackTemp,
 	return
 }
 
-// ASMEPrecomputed is the same as PlumeRiseASME except it takes
+// ASMEPrecomputed is the same as ASME except it takes
 // precomputed (averaged) meteorological parameters:
 // the inverse of the stability parameter (s1Inverse [1/unknown units],
 // unstaggered grid), windSpeedMinusOnePointFour [(m/s)^(-1.4)] (unstaggered grid),
