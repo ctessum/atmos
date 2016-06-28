@@ -165,7 +165,7 @@ func calcDeltaHPrecomputed(stackLayer int, temperature, windSpeed, sClass,
 		F := g * tempDiff * stackVel *
 			math.Pow(stackDiam/2, 2)
 
-		if sClass[stackLayer] > 0.5 && s1[stackLayer] != 0 { // stable conditions
+		if sClass[stackLayer] > 0.5 && s1[stackLayer] != 0 && F > 0 { // stable conditions
 
 			// Ideally, we would also use the inverse of S1,
 			// but S1 is zero sometimes so that doesn't work well.
@@ -178,7 +178,7 @@ func calcDeltaHPrecomputed(stackLayer int, temperature, windSpeed, sClass,
 					F, s1[stackLayer], windSpeedMinusThird[stackLayer])
 			}
 
-		} else { // unstable conditions
+		} else if F > 0. { // unstable conditions
 
 			deltaH = 7.4 * math.Pow(F*math.Pow(stackHeight, 2.),
 				0.333333333) * windSpeedInverse[stackLayer]
@@ -188,6 +188,9 @@ func calcDeltaHPrecomputed(stackLayer int, temperature, windSpeed, sClass,
 					"F: %g, stackHeight: %g, windSpeedInverse: %g",
 					F, stackHeight, windSpeedInverse[stackLayer])
 			}
+		} else {
+			// If F < 0, the unstable algorithm above will give an imaginary plume rise.
+			deltaH = 0
 		}
 	}
 	return deltaH, nil
