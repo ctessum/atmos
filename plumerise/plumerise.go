@@ -146,6 +146,12 @@ func calcDeltaHPrecomputed(stackLayer int, temperature, windSpeed, sClass,
 		deltaH = stackDiam * math.Pow(stackVel, 1.4) *
 			windSpeedMinusOnePointFour[stackLayer]
 
+		if math.IsNaN(deltaH) {
+			return deltaH, fmt.Errorf("plumerise: momentum-dominated deltaH is NaN. "+
+				"stackDiam: %g, stackVel: %g, windSpeedMinusOnePointFour: %g",
+				stackDiam, stackVel, windSpeedMinusOnePointFour[stackLayer])
+		}
+
 	} else { // Plume is dominated by buoyancy forces
 
 		var tempDiff float64
@@ -159,27 +165,30 @@ func calcDeltaHPrecomputed(stackLayer int, temperature, windSpeed, sClass,
 		F := g * tempDiff * stackVel *
 			math.Pow(stackDiam/2, 2)
 
-		if sClass[stackLayer] > 0.5 { // stable conditions
+		if sClass[stackLayer] > 0.5 && s1[stackLayer] != 0 { // stable conditions
 
 			// Ideally, we would also use the inverse of S1,
 			// but S1 is zero sometimes so that doesn't work well.
 			deltaH = 29. * math.Pow(
 				F/s1[stackLayer], 0.333333333) * windSpeedMinusThird[stackLayer]
 
+			if math.IsNaN(deltaH) {
+				return deltaH, fmt.Errorf("plumerise: stable bouyancy-dominated deltaH is NaN. "+
+					"F: %g, s1: %g, windSpeedMinusThird: %g",
+					F, s1[stackLayer], windSpeedMinusThird[stackLayer])
+			}
+
 		} else { // unstable conditions
 
 			deltaH = 7.4 * math.Pow(F*math.Pow(stackHeight, 2.),
 				0.333333333) * windSpeedInverse[stackLayer]
+
+			if math.IsNaN(deltaH) {
+				return deltaH, fmt.Errorf("plumerise: unstable bouyancy-dominated deltaH is NaN. "+
+					"F: %g, stackHeight: %g, windSpeedInverse: %g",
+					F, stackHeight, windSpeedInverse[stackLayer])
+			}
 		}
-	}
-	if math.IsNaN(deltaH) {
-		err := fmt.Errorf("plume height == NaN\n"+
-			"deltaH: %v, stackDiam: %v,\n"+
-			"stackVel: %v, windSpd: %v, stackTemp: %v,\n"+
-			"airTemp: %v, stackHeight: %v\n",
-			deltaH, stackDiam, stackVel,
-			windSpd, stackTemp, airTemp, stackHeight)
-		return deltaH, err
 	}
 	return deltaH, nil
 }
