@@ -1,6 +1,7 @@
 package acm2
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -79,25 +80,28 @@ func calculateKh(z, h, L, ustar float64) (kh float64) {
 	return
 }
 
-// Calculate mass diffusivity [m2/s] within the boundary
+// CalculateKm calculates mass diffusivity [m2/s] within the boundary
 // layer when given
 // height (z [m]), boundary layer height (h [m]),
 // Monin-Obukhov length (L [m]), and friction velocity
 // (ustar [m/s]).
 func CalculateKm(z, h, L, ustar float64) (km float64) {
-	var zs, ϕ_m float64
+	if z < 0 {
+		panic(fmt.Errorf("acm2: height (%g) cannot be negative", z))
+	}
+	var zs, ϕm float64
 	if L < 0. { // Unstable conditions
 		// Pleim 2007, equation 12.5
 		zs = min(z, 0.1*h)
 		// Pleim Eq. 13
-		ϕ_m = math.Pow(1.-16.*zs/L, -0.25)
+		ϕm = math.Pow(1.-16.*zs/L, -0.25)
 	} else { // Stable conditions
 		zs = z
 		// Dyer, 1974 (Concluding Remarks)
-		ϕ_m = 1. + 5.*zs/L
+		ϕm = 1. + 5.*zs/L
 	}
 	// Pleim Eq. 12; units = m2/s
-	km = κ * ustar / ϕ_m * z * math.Pow(1-z/h, 2)
+	km = κ * ustar / ϕm * z * math.Pow(1-z/h, 2)
 	return
 }
 
