@@ -27,7 +27,7 @@ func ASME(stackHeight, stackDiam, stackTemp,
 
 	stackLayer, err := findLayer(layerHeights, stackHeight)
 	if err != nil {
-		return
+		return stackLayer, stackHeight, err
 	}
 	deltaH, err := calcDeltaH(stackLayer, temperature, windSpeed, sClass, s1,
 		stackHeight, stackTemp, stackVel, stackDiam)
@@ -55,7 +55,7 @@ func ASMEPrecomputed(stackHeight, stackDiam, stackTemp,
 
 	stackLayer, err := findLayer(layerHeights, stackHeight)
 	if err != nil {
-		return
+		return stackLayer, stackHeight, err
 	}
 	deltaH, err := calcDeltaHPrecomputed(stackLayer, temperature, windSpeed, sClass,
 		s1, stackHeight, stackTemp, stackVel, stackDiam,
