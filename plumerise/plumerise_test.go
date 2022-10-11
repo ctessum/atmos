@@ -207,13 +207,13 @@ func TestASME(t *testing.T) {
 			stackHeight: 0,
 			err:         nil,
 			plumeLayer:  0,
-			plumeHeight: 106.6521,
+			plumeHeight: 0,
 		},
 		{
 			stackHeight: 10,
 			err:         ErrAboveModelTop,
 			plumeLayer:  3,
-			plumeHeight: 106.6521,
+			plumeHeight: 56.3146,
 		},
 		{
 			stackHeight: 20,
@@ -234,19 +234,19 @@ func TestASME(t *testing.T) {
 				"stackVel: 20, windSpd: 14, stackTemp: 100,\n" +
 				"airTemp: 15, stackHeight: 40\n"),
 			plumeLayer:  0,
-			plumeHeight: 106.6521,
+			plumeHeight: 0,
 		},
 		{
 			stackHeight: 50,
 			err:         ErrAboveModelTop,
 			plumeLayer:  3,
-			plumeHeight: 106.6521,
+			plumeHeight: 50,
 		},
 		{
 			stackHeight: 60,
 			err:         ErrAboveModelTop,
 			plumeLayer:  3,
-			plumeHeight: 106.6521,
+			plumeHeight: 60,
 		},
 	}
 	for _, tt := range tests {
@@ -256,7 +256,7 @@ func TestASME(t *testing.T) {
 		if plumeLayer != tt.plumeLayer {
 			t.Errorf("%v should have plumeLayer %v, but is %v", tt.stackHeight, tt.plumeLayer, plumeLayer)
 		}
-		if plumeHeight-tt.plumeHeight > 0.0001 {
+		if math.Abs(plumeHeight-tt.plumeHeight) > 0.0001 {
 			t.Errorf("%v should have plumeHeight %v, but is %v", tt.stackHeight, tt.plumeHeight, plumeHeight)
 		}
 		if err != nil && tt.err != nil && err.Error() != tt.err.Error() {
@@ -322,7 +322,7 @@ func TestASMEPrecomputed(t *testing.T) {
 			err: errors.New("plumerise: stable bouyancy-dominated deltaH is NaN. " +
 				"F: 6537.766666666667, s1: 1, windSpeedMinusThird: NaN"),
 			plumeLayer:  0,
-			plumeHeight: 100,
+			plumeHeight: 0,
 		},
 		{
 			stackHeight: 50,
@@ -335,13 +335,13 @@ func TestASMEPrecomputed(t *testing.T) {
 			err: errors.New("plumerise: unstable bouyancy-dominated deltaH is NaN. " +
 				"F: 6537.766666666667, stackHeight: 60, windSpeedInverse: NaN"),
 			plumeLayer:  0,
-			plumeHeight: 100,
+			plumeHeight: 0,
 		},
 		{
 			stackHeight: 70,
 			err:         ErrAboveModelTop,
 			plumeLayer:  5,
-			plumeHeight: 100,
+			plumeHeight: 70,
 		},
 	}
 	for _, tt := range tests {
@@ -352,7 +352,7 @@ func TestASMEPrecomputed(t *testing.T) {
 		if plumeLayer != tt.plumeLayer {
 			t.Errorf("stackHeight %v should have plumeLayer %v, but is %v", tt.stackHeight, tt.plumeLayer, plumeLayer)
 		}
-		if plumeHeight-tt.plumeHeight > 0.0001 {
+		if math.Abs(plumeHeight-tt.plumeHeight) > 0.0001 {
 			t.Errorf("stackHeight %v should have plumeHeight %v, but is %v", tt.stackHeight, tt.plumeHeight, plumeHeight)
 		}
 		if err != nil && tt.err != nil && err.Error() != tt.err.Error() {
